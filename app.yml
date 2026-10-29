@@ -16,9 +16,10 @@ application:
   tags: [ieeg, seeg, electrophysiology, epilepsy, neuroscience, seizure-onset, fragility, network-model]
 runtime:
   # Measured on the 24 demo clips (85-208 bipolar channels, 719 windows each); see README
-  # "Runtime". Time grows with channels^3 per window; memory stays under ~1 GB.
+  # "Runtime". Time grows with channels^3 per window; 2.3 GB peak with 4 workers. 8 GiB: the
+  # smallest Fargate memory for 4 vCPU (4096/4096 failed to register as a task definition).
   cpu: 4096
-  memory: 4096
+  memory: 8192
   computeTypes: [standard]
   timeoutSeconds: 14400
 parameters:

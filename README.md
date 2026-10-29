@@ -149,7 +149,8 @@ the AUC of `fragility_post` for telling the expert consensus onset channels (`on
 
 ## Runtime
 
-`computeTypes: [standard]`, 4 vCPU / 4 GiB, 4 h timeout. Cost per window grows with the cube
+`computeTypes: [standard]`, 4 vCPU / 8 GiB (4 GiB is not a valid Fargate size for 4 vCPU), 4 h
+timeout. Cost per window grows with the cube
 of the number of channels (100 complex matrix inverses per window); the number of windows is
 fixed by `WINDOW_S`/`STEP_MS` (719 by default), not by the sampling rate. One recording at a time,
 windows in `THREADS` forked workers.
@@ -171,6 +172,30 @@ in that run, against 43–49 s for its siblings, while other containers shared t
 read that as contention, not the app. Before the vectorised fragility row, `ENGINE=ezfragility`
 measured 2.5 s per 208-channel window instead of 0.8 s. The image is 1.44 GB unpacked, 394 MB
 compressed (`rocker/r-ver:4.6.0` 1.36 GB plus ~80 MB of R packages).
+
+Re-measured for v0.1.1 on 3 clips (HUP224 186 ch, HUP230 95 ch, HUP250 151 ch; same emulation,
+`--cpus 4 --memory 8g`, `THREADS=4`): 279 s wall, 1,030 CPU-s, cgroup `memory.peak` 2.33 GB
+(148, 37 and 93 s per clip); natively (arm64, same Mac, 4 workers) 115 s. Where the time goes
+(Rprof, natively, 186 channels): 90% in the fragility row, of which two thirds are the 100
+complex inverses `solve(A - lambda I)` (already at BLAS speed) and a fifth the row sums; the
+ridge search is 6%, band-pass and resampling 3%. Bad channels never enter the model (only
+`good` channels are read). Parallelism is over windows in forked processes with one OpenBLAS
+thread each, which keeps every vCPU busy; recordings in parallel would only add the ~3% serial
+part. v0.1.1 is therefore as fast as v0.1.0: it changes no computation.
+
+**Why it was not made faster.** For the recordings with more channels than samples per window
+(about 128 at 512 Hz and 250 ms), the ridge model `A` is tiny (all eigenvalues below ~0.1) and
+`A - lambda I` is close to `-lambda I`. The fragility row then rests on a nearly rank-1 Gram
+determinant `|Im r|^2 |Re r|^2 - (Im r . Re r)^2`, which cancels by a factor up to ~10^7, so the
+per-window fragility carries rounding noise of up to ~10^-2 (8e-3 against the same quantity
+computed without the cancellation, as `|Re r|^2 |Im r_perp|^2`). Any reformulation (one
+eigen-decomposition per window with closed forms per trial eigenvalue, a Neumann series, BLAS
+threads, a different BLAS kernel) changes that noise: the same v0.1.0 image differs by up to
+6e-3 per window between two OpenBLAS kernels (forced Haswell vs the one picked under emulation), and its `fragility.csv`
+by up to 7e-5 between amd64 and arm64 (ranks identical). A ~2x faster series form for these
+windows moved the CSV means by up to 1.4e-3 (ranks identical, but less accurate than v0.1.0
+against the cancellation-free reference), so it was not adopted. Making the computation
+accurate first, then faster, changes results and is left for a minor version.
 
 ## Running it locally
 

@@ -60,3 +60,16 @@ test_that("rational resampling ratios and preprocessing", {
   expect_equal(rownames(p$x), rownames(x))
   expect_equal(preprocess(x, 256, NULL, 512)$fs, 256)   # never upsampled
 })
+
+test_that("the fast engine reproduces the fragility v0.1.0 computed (stored)", {
+  # v0.1.0-fragility.rds: fragility_matrix() of v0.1.0 (amd64 image) on this synthetic recording,
+  # with the penalty searched (raised in 18 of 95 windows) and fixed.
+  ref <- readRDS(testthat::test_path("v0.1.0-fragility.rds"))
+  x <- synth_recording(n_ch = 12, fs = 128, dur = 12, onset = 6)
+  a <- fragility_matrix(x, win = 32, step = 16, nSearch = 30L, engine = "fast")
+  f <- fragility_matrix(x, win = 32, step = 16, lambda = 0.01, nSearch = 30L, engine = "fast")
+  expect_equal(a$frag, ref$auto$frag, tolerance = 1e-10)
+  expect_identical(a$lambda, ref$auto$lambda)
+  expect_equal(f$frag, ref$fixed$frag, tolerance = 1e-10)
+  expect_identical(a$stable, ref$auto$stable)
+})
