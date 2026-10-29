@@ -1,6 +1,9 @@
 # processor-seizure-fragility entry point: Rscript /app/R/main.R
-# Reads $INPUT_DIR/{ieeg,onsets} (or everything side by side), writes $OUTPUT_DIR/fragility.csv
-# and $OUTPUT_DIR/provenance.json.
+# Reads $INPUT_DIR/{ieeg,onsets} (or everything side by side), writes
+# $OUTPUT_DIR/fragility/fragility.csv and $OUTPUT_DIR/fragility/provenance.json: everything sits in a
+# folder named after the method, so this output can be one of several links into one fan-in port
+# (seizure-consensus `methods`) without its file names colliding. seizure_onsets.csv is found by
+# name anywhere under the onsets port (seizure-dynasd writes it under dynasd/).
 
 app_dir <- function() {
   if (nzchar(Sys.getenv("APP_ROOT"))) return(file.path(Sys.getenv("APP_ROOT"), "R"))
@@ -10,20 +13,31 @@ app_dir <- function() {
 source(file.path(app_dir(), "common.R"))
 source(file.path(app_dir(), "edf.R"))
 source(file.path(app_dir(), "fragility.R"))
+source(file.path(app_dir(), "resources.R"))
 
+OUTPUT_FOLDER <- "fragility"  # OUTPUT_DIR/<folder>/: the output can be one link of a fan-in port
+# Memory per forked worker (~0.5 GB for a 200-channel recording) and for the parent: measured on
+# the demo clips, 2.29 GB peak with 4 workers (README "Runtime").
+WORKER_MB <- 550
+PARENT_MB <- 500
 COLUMNS <- c("recording_id", "channel", "fragility_pre", "fragility_post", "rank")
 
 run <- function(input_dir = Sys.getenv("INPUT_DIR", "/data/input"),
                 output_dir = Sys.getenv("OUTPUT_DIR", "/data/output")) {
   options(warn = 1)
+  output_dir <- file.path(output_dir, OUTPUT_FOLDER)
   started <- Sys.time()
   p <- tryCatch(fragility_params(), error = function(e) { log_line("ERROR: %s", conditionMessage(e)); NULL })
   if (is.null(p)) return(1L)
+  threads_requested <- p$THREADS
+  w <- resolve_workers(p$THREADS, WORKER_MB, PARENT_MB)
+  p$THREADS <- w$n
   log_line("processor-seizure-fragility %s (EZFragility %s): WINDOW_S=%g,%g RESAMPLE_HZ=%g BANDPASS_HZ=%s WIN_MS=%g STEP_MS=%g LAMBDA=%s N_SEARCH=%d ENGINE=%s ONSET_SOURCE=%s THREADS=%d",
            app_version(), as.character(utils::packageVersion("EZFragility")), p$WINDOW_S[1], p$WINDOW_S[2],
            p$RESAMPLE_HZ, if (is.null(p$BANDPASS_HZ)) "none" else paste(p$BANDPASS_HZ, collapse = ","),
            p$WIN_MS, p$STEP_MS, if (is.null(p$LAMBDA)) "auto" else format(p$LAMBDA), p$N_SEARCH,
            p$ENGINE, p$ONSET_SOURCE, p$THREADS)
+  log_line("worker processes: %d (%s)", w$n, w$why)
 
   ieeg_dir <- port_dir(input_dir, "ieeg")
   recs <- tryCatch(find_recordings(ieeg_dir), error = function(e) { log_line("ERROR: %s", conditionMessage(e)); NULL })
@@ -83,11 +97,13 @@ run <- function(input_dir = Sys.getenv("INPUT_DIR", "/data/input"),
   params <- p
   params$BANDPASS_HZ <- if (is.null(p$BANDPASS_HZ)) "none" else p$BANDPASS_HZ
   params$LAMBDA <- if (is.null(p$LAMBDA)) "auto" else p$LAMBDA
+  params$THREADS <- threads_requested
   prov <- list(
     app = "processor-seizure-fragility", version = app_version(),
     tools = c(list(R = as.character(getRversion())), pkg_versions(c("EZFragility", "Epoch", "gsignal", "jsonlite")),
               list(BLAS = basename(extSoftVersion()[["BLAS"]] %||% ""))),
     parameters = params,
+    threads = list(used = w$n, why = w$why),
     inputs = list(recordings = rel_path(unique(stats::na.omit(recs$index)), input_dir),
                   edf = rel_path(recs$edf, input_dir),
                   onsets = if (is.null(onsets)) NULL else rel_path(attr(onsets, "files"), input_dir)),

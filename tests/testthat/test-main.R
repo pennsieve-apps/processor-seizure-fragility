@@ -1,4 +1,4 @@
-read_out <- function(out) utils::read.csv(file.path(out, "fragility.csv"), stringsAsFactors = FALSE)
+read_out <- function(out) utils::read.csv(file.path(out, "fragility", "fragility.csv"), stringsAsFactors = FALSE)
 
 test_that("linked inputs: fragility.csv per conventions and provenance.json", {
   fast_env()
@@ -6,6 +6,8 @@ test_that("linked inputs: fragility.csv per conventions and provenance.json", {
   make_fixture(d, n_rec = 2, bad = 8)
   out <- file.path(d, "out")
   expect_equal(run(d, out), 0L)
+  # everything under a folder named after the method (one link of a fan-in port)
+  expect_equal(list.files(out), "fragility")
   f <- read_out(out)
   expect_equal(names(f), c("recording_id", "channel", "fragility_pre", "fragility_post", "rank"))
   expect_equal(length(unique(f$recording_id)), 2)
@@ -15,7 +17,7 @@ test_that("linked inputs: fragility.csv per conventions and provenance.json", {
   r1 <- f[f$recording_id == f$recording_id[1], ]
   expect_equal(sort(r1$rank), rank(-r1$fragility_post, ties.method = "min")[order(rank(-r1$fragility_post, ties.method = "min"))])
   expect_equal(min(r1$rank), 1)
-  prov <- jsonlite::fromJSON(file.path(out, "provenance.json"), simplifyVector = FALSE)
+  prov <- jsonlite::fromJSON(file.path(out, "fragility", "provenance.json"), simplifyVector = FALSE)
   expect_equal(prov$app, "processor-seizure-fragility")
   expect_equal(prov$parameters$N_SEARCH, 10)
   rec <- prov$recordings[[1]]
@@ -30,18 +32,19 @@ test_that("onsets from the onsets port win over recordings.csv; ONSET_SOURCE=exp
   fast_env()
   d <- withr::local_tempdir()
   make_fixture(d, n_rec = 1)
-  dir.create(file.path(d, "onsets"))
+  # as seizure-dynasd writes it: its output folder dynasd/ inside the onsets port
+  dir.create(file.path(d, "onsets", "dynasd"), recursive = TRUE)
   utils::write.csv(data.frame(recording_id = "sub-01_ses-01_task-ictal1_run-01", onset_s = 22.5, method = "dynasd"),
-                   file.path(d, "onsets", "seizure_onsets.csv"), row.names = FALSE)
+                   file.path(d, "onsets", "dynasd", "seizure_onsets.csv"), row.names = FALSE)
   out <- file.path(d, "out")
   expect_equal(run(d, out), 0L)
-  prov <- jsonlite::fromJSON(file.path(out, "provenance.json"), simplifyVector = FALSE)
+  prov <- jsonlite::fromJSON(file.path(out, "fragility", "provenance.json"), simplifyVector = FALSE)
   expect_equal(prov$recordings[[1]]$onset_source, "onsets")
   expect_equal(prov$recordings[[1]]$onset_s, 22.5)
   withr::local_envvar(ONSET_SOURCE = "expert")
   out2 <- file.path(d, "out2")
   expect_equal(run(d, out2), 0L)
-  prov2 <- jsonlite::fromJSON(file.path(out2, "provenance.json"), simplifyVector = FALSE)
+  prov2 <- jsonlite::fromJSON(file.path(out2, "fragility", "provenance.json"), simplifyVector = FALSE)
   expect_equal(prov2$recordings[[1]]$onset_s, 20)
 })
 
@@ -53,7 +56,7 @@ test_that("no links, plain BIDS without recordings.csv: onset from _events.tsv",
   expect_equal(run(d, out), 0L)
   f <- read_out(out)
   expect_equal(unique(f$recording_id), "sub-01_ses-01_task-ictal1_run-01")
-  prov <- jsonlite::fromJSON(file.path(out, "provenance.json"), simplifyVector = FALSE)
+  prov <- jsonlite::fromJSON(file.path(out, "fragility", "provenance.json"), simplifyVector = FALSE)
   expect_match(prov$recordings[[1]]$onset_source, "events.tsv")
 })
 
@@ -69,7 +72,7 @@ test_that("a recording without an onset is skipped, a broken one fails, the step
   writeBin(as.raw(1:10), file.path(ieeg, rc$path[3]))
   out <- file.path(d, "out")
   expect_equal(run(d, out), 0L)
-  prov <- jsonlite::fromJSON(file.path(out, "provenance.json"), simplifyVector = FALSE)
+  prov <- jsonlite::fromJSON(file.path(out, "fragility", "provenance.json"), simplifyVector = FALSE)
   st <- vapply(prov$recordings, function(r) r$status, "")
   expect_equal(st, c("ok", "skipped", "failed"))
   expect_equal(unique(read_out(out)$recording_id), rc$recording_id[1])
@@ -91,7 +94,7 @@ test_that("windows that run past the recording are cut, and noted", {
   make_fixture(d, n_rec = 1)
   out <- file.path(d, "out")
   expect_equal(run(d, out), 0L)
-  prov <- jsonlite::fromJSON(file.path(out, "provenance.json"), simplifyVector = FALSE)
+  prov <- jsonlite::fromJSON(file.path(out, "fragility", "provenance.json"), simplifyVector = FALSE)
   expect_match(prov$recordings[[1]]$notes, "before the recording")
   expect_equal(prov$recordings[[1]]$window_s[[1]], 0)
 })

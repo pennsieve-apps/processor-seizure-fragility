@@ -28,8 +28,8 @@ onset. This is EZFragility's reading of the method; see *How faithful is this to
 | Port | Kind | Files | Notes |
 |---|---|---|---|
 | `ieeg` | input (subfolder), required | `recordings.csv`, `*_desc-preproc_ieeg.edf`, `_channels.tsv`, `_events.tsv` | ieeg-prep's BIDS-iEEG derivative. Also a plain BIDS-iEEG dataset (`*_ieeg.edf` + sidecars) or EDF files. Found in `INPUT_DIR/ieeg/`, else anywhere under `INPUT_DIR` (symlinks followed). |
-| `onsets` | input (subfolder), optional | `seizure_onsets.csv` (`recording_id, onset_s, method`) | seizure-dynasd's detected onsets; used in place of the expert onset for the recordings it lists. Found in `INPUT_DIR/onsets/`, else anywhere under `INPUT_DIR`. |
-| `fragility` | output | `fragility.csv`, `provenance.json` | One output port: the whole `OUTPUT_DIR`. |
+| `onsets` | input (subfolder), optional | `seizure_onsets.csv` (`recording_id, onset_s, method`) | seizure-dynasd's detected onsets (it writes them under `dynasd/`); used in place of the expert onset for the recordings it lists. Found anywhere under `INPUT_DIR/onsets/`, else anywhere under `INPUT_DIR`. |
+| `fragility` | output | `fragility/fragility.csv`, `fragility/provenance.json` | One output port: the whole `OUTPUT_DIR`, everything under `fragility/` so it can be one of several links into a fan-in port (seizure-consensus `methods`) without name collisions. |
 
 Channels used: those of `_channels.tsv` with `status` not `bad` and `type` SEEG, ECOG, DBS or
 EEG (all EDF signals except EDF+ annotations when there is no `_channels.tsv`).
@@ -52,7 +52,7 @@ are skipped and listed in `provenance.json`. The source used is recorded per rec
 | `LAMBDA` | `auto` | Ridge penalty. `auto`: EZFragility's search (1e-4, raised by bisection up to 10 until A is stable). A number fixes it for every window (EZFragility's manuscript compares 1e-4, 1e-3, 1e-2). |
 | `N_SEARCH` | `100` | Trial eigenvalues on the unit circle per channel (EZFragility's `nSearch`). |
 | `ENGINE` | `fast` | `fast`: EZFragility's ridge search, with the fragility row computed for all channels at once (below). `ezfragility`: EZFragility's `calcAdjFrag` unchanged (~3x slower). |
-| `THREADS` | `4` | Worker processes over windows (fork); match the vCPUs. One recording is processed at a time. |
+| `THREADS` | `0` | Worker processes over windows (fork). `0` = one per vCPU the container is given (cgroup CPU quota, else CPU affinity, else the CPU count), capped so that ~550 MB per worker plus ~500 MB for the parent fit the memory limit; the number chosen and why are logged and kept in `provenance.json` (`threads`). One recording is processed at a time. |
 
 ## Output: `fragility.csv`
 

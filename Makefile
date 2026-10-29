@@ -38,7 +38,7 @@ run: clean fixture
 	docker compose -f docker-compose.yml down --remove-orphans
 	@echo "--- outputs:"
 	@find data/output -type f | sort
-	@head -5 data/output/fragility.csv
+	@head -5 data/output/fragility/fragility.csv
 
 clean:
 	rm -rf data/output data/fixture

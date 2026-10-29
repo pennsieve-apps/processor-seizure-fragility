@@ -64,7 +64,7 @@ fragility_params <- function() {
     N_SEARCH = env_number("N_SEARCH", 100, min = 1, max = 10000, integer = TRUE),
     ENGINE = env_choice("ENGINE", "fast", c("fast", "ezfragility")),
     ONSET_SOURCE = env_choice("ONSET_SOURCE", "auto", c("auto", "onsets", "expert")),
-    THREADS = env_number("THREADS", 4, min = 1, max = 128, integer = TRUE)
+    THREADS = env_number("THREADS", 0, min = 0, max = 128, integer = TRUE)
   )
 }
 

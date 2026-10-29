@@ -93,9 +93,12 @@ parameters:
   - name: THREADS
     type: integer
     label: Worker processes
-    description: Windows are computed in parallel in this many processes; match the vCPUs.
-    defaultValue: 4
-    min: 1
+    description: >-
+      Windows are computed in parallel in this many processes. 0 (default) = one per vCPU the
+      container is given (its cgroup CPU quota, not the host's CPU count), fewer when ~550 MB per
+      worker would not fit its memory.
+    defaultValue: 0
+    min: 0
     max: 128
 inputs:
   - name: ieeg
@@ -116,7 +119,9 @@ inputs:
 outputs:
   - name: fragility
     description: >-
-      fragility.csv (recording_id, channel, fragility_pre, fragility_post, rank): mean fragility
+      Under fragility/ (one folder named after the method, so the output can be one of several
+      links into a fan-in port, seizure-consensus methods): fragility.csv (recording_id,
+      channel, fragility_pre, fragility_post, rank): mean fragility
       (0-1) over the windows before and after the onset, and the channel's rank by fragility_post
       (1 = most fragile); provenance.json (parameters, onset used and its source, windows, ridge
       penalties, timings per recording).
