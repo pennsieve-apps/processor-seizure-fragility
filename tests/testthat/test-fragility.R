@@ -26,6 +26,16 @@ test_that("the vectorised fragility row equals EZFragility's fragilityRow", {
   }
 })
 
+test_that("a nearly singular A - lambda I gives no NaN", {
+  set.seed(5)
+  n <- 6
+  Q <- qr.Q(qr(matrix(stats::rnorm(n * n), n)))
+  A <- Q %*% diag(c(1 - 1e-12, 0.5, 0.4, 0.3, 0.2, 0.1)) %*% t(Q)   # eigenvalue on the circle
+  f <- fragility_row_fast(A, 50L)
+  expect_true(all(is.finite(f)))
+  expect_true(all(f >= 0 & f <= 1))
+})
+
 test_that("the fast engine gives EZFragility's calcAdjFrag result", {
   x <- synth_recording(n_ch = 6, fs = 128, dur = 6)
   a <- fragility_matrix(x, win = 32, step = 16, nSearch = 20L, engine = "fast")

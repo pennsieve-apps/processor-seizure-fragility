@@ -26,9 +26,20 @@ fragility_row_fast <- function(A, nSearch = 100L) {
     M <- solve(A - complex(real = sqrt(1 - w^2), imaginary = w) * I)
     re <- Re(M); im <- Im(M)
     ii <- rowSums(im * im); rr <- rowSums(re * re); ir <- rowSums(im * re)
-    best <- pmin(best, sqrt(ii / (ii * rr - ir * ir)))
+    # When A - lambda I is nearly singular (a model that only just passed the stability
+    # check) the Gram determinant can cancel to <= 0 in floating point: skip that lambda
+    # for that channel rather than produce NaN (EZFragility's loop gives an arbitrary
+    # value there, or fails in solve()).
+    d <- ii * rr - ir * ir
+    v <- rep(NA_real_, n)
+    ok <- is.finite(d) & d > 0
+    v[ok] <- sqrt(ii[ok] / d[ok])
+    best <- pmin(best, v, na.rm = TRUE)
   }
-  (max(best) - best) / max(best)
+  best[!is.finite(best)] <- NA
+  m <- max(best, na.rm = TRUE)
+  if (!is.finite(m)) return(rep(NA_real_, n))
+  (m - best) / m
 }
 
 ez_ridge_search <- utils::getFromNamespace("ridgeSearch", "EZFragility")
@@ -156,10 +167,13 @@ fragility_recording <- function(rec, onset, onset_source, p) {
   we <- ws + win / fs2
   pre <- we <= 1e-9
   post <- ws >= -1e-9
-  mean_rows <- function(cols) if (any(cols)) rowMeans(fm$frag[, cols, drop = FALSE]) else rep(NA_real_, nrow(fm$frag))
+  mean_rows <- function(cols) if (any(cols)) rowMeans(fm$frag[, cols, drop = FALSE], na.rm = TRUE) else rep(NA_real_, nrow(fm$frag))
   f_pre <- mean_rows(pre); f_post <- mean_rows(post)
   if (!any(pre)) notes <- c(notes, "no window before the onset: fragility_pre empty")
   if (!any(post)) notes <- c(notes, "no window after the onset: fragility_post empty")
+  f_pre[is.nan(f_pre)] <- NA; f_post[is.nan(f_post)] <- NA
+  n_nan <- sum(colSums(is.na(fm$frag)) > 0)
+  if (n_nan) notes <- c(notes, sprintf("%d window(s) with numerically undefined fragility for some channels (left out of the means)", n_nan))
   rk <- rank(-f_post, ties.method = "min", na.last = "keep")
   rows <- data.frame(recording_id = rec$recording_id, channel = rownames(fm$frag),
                      fragility_pre = round(f_pre, 6), fragility_post = round(f_post, 6),
@@ -174,7 +188,7 @@ fragility_recording <- function(rec, onset, onset_source, p) {
                window_samples = win, step_samples = step,
                lambda = list(min = min(fm$lambda), median = stats::median(fm$lambda), max = max(fm$lambda),
                              raised = sum(fm$lambda > 1e-4 + 1e-12)),
-               unstable_windows = nun,
+               unstable_windows = nun, undefined_windows = n_nan,
                seconds = round(as.numeric(difftime(Sys.time(), t_start, units = "secs")), 1),
                notes = paste(notes, collapse = "; "))
   list(rows = rows, info = info)
