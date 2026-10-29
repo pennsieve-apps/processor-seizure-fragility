@@ -94,7 +94,7 @@ documents the choices it makes instead:
 
 - **Ridge penalty.** The paper recommends λ = 1e-4; on the authors' pt01 data that does not
   always give a stable A, so EZFragility searches upward until it does. On the demo clips the
-  penalty had to be raised in {{RAISED}} of the windows.
+  penalty had to be raised in 4.5 % (777 of 17,256; at most 0.12), and every window ended up stable of the windows.
 - **The perturbation's eigenvalue.** The paper places the eigenvalue at some |λ| = 1 without
   saying which; EZFragility takes the λ that minimises the perturbation norm over a grid
   (`N_SEARCH`).
@@ -102,8 +102,8 @@ documents the choices it makes instead:
   channels within a window; values are not comparable across recordings in absolute terms.
 - **Preprocessing.** Li et al. analysed data around 1 kHz; EZFragility's reproduction band-passes
   0.5–150 Hz and works on clips of ±10–30 s. The app uses the same band and resamples to 512 Hz
-  by default. On four demo clips, 512 Hz and 1024 Hz gave the same median AUC ({{AUC512}} vs
-  {{AUC1024}}); 512 Hz halves the filtering work. Runtime is set by the number of channels and
+  by default. On four demo clips, 512 Hz and 1024 Hz gave the same median AUC (0.970 vs
+  0.976); 512 Hz halves the filtering work. Runtime is set by the number of channels and
   windows, not the sampling rate.
 - **Summary.** The paper's figures show fragility heat maps and compare SOZ with non-SOZ
   distributions over time; collapsing to a mean before and after onset is this app's choice,
@@ -114,11 +114,58 @@ documents the choices it makes instead:
 
 ## Results on the demo data
 
-{{RESULTS}}
+All 24 SEEG clips of the Multi-Expert Seizure Annotation dataset (6 HUP patients, 4 seizures
+each, 1 of them stimulation-induced), after the real ieeg-prep (bipolar, 72–204 good channels,
+1024 Hz), default parameters, expert onset (`recordings.csv` `onset_s`). Validation: per clip,
+the AUC of `fragility_post` for telling the expert consensus onset channels (`onset` in
+`_channels.tsv`, 1–13 per clip) from all other channels.
+
+| Score | Median AUC | Range | Mean |
+|---|---|---|---|
+| `fragility_post` (0 to +30 s) | **0.986** | 0.551–1.000 | 0.921 |
+| `fragility_pre` (−60 to 0 s) | 0.935 | 0.549–0.994 | 0.885 |
+| `fragility_post − fragility_pre` | 0.643 | 0.014–1.000 | 0.610 |
+
+- Per patient: HUP235, HUP238 and HUP250 0.93–1.00 in every seizure; HUP224 0.95–0.99;
+  HUP257 0.90–0.99; **HUP230 0.55–0.72** in all four seizures (the most fragile channels, LO/LM
+  and LB, are not the experts' onset channels).
+- Spontaneous seizures median 0.992 (n = 18), stimulation-induced 0.936 (n = 6); with low-voltage
+  fast activity 0.946 (n = 9), without 0.995 (n = 15). (These two flags are not in ieeg-prep's
+  `recordings.csv` yet; they were taken from the dataset's `annotations.tsv` for this check only.)
+- Through seizure-consensus with fragility alone: precision 0.35, recall 0.87, F1 0.46 (medians)
+  for the top 10 channels.
+- **Read with care.** The most fragile channels are largely the same in every seizure of a
+  patient, and already before onset (pre-onset AUC 0.935), so fragility here behaves much like a
+  stable property of the channel (its signal and its place in the network) that coincides with
+  the expert onset channels, rather than a change at onset: the post − pre difference is barely
+  better than chance. 24 seizures from 6 patients are 6 independent tests, not 24.
+- 512 Hz vs 1024 Hz analysis rate on four clips (stand-in preprocessing): median AUC 0.970 vs 0.976,
+  same top channels.
 
 ## Runtime
 
-{{RUNTIME}}
+`computeTypes: [standard]`, 4 vCPU / 4 GiB, 4 h timeout. Cost per window grows with the cube
+of the number of channels (100 complex matrix inverses per window); the number of windows is
+fixed by `WINDOW_S`/`STEP_MS` (719 by default), not by the sampling rate. One recording at a time,
+windows in `THREADS` forked workers.
+
+Measured on the 24 demo clips after ieeg-prep, amd64 image under emulation on an M-series Mac
+(Docker Desktop), `--cpus 4 --memory 4g`, `THREADS=4`; anonymous memory of the container's cgroup
+sampled every 0.5 s:
+
+| | channels | wall time per clip | peak memory |
+|---|---|---|---|
+| HUP238 (smallest) | 72–113 | 22–55 s | |
+| HUP250 | 148–152 | 92–107 s | |
+| HUP224 (largest) | 186–204 | 177–200 s | 2.29 GB anon (memory.peak 2.34 GB) |
+| all 24 clips | 72–204 | 39 min 25 s | 2.29 GB |
+
+Memory is ~0.5 GB per worker for a 200-channel recording (each forked worker's own heap), plus
+the parent; ~1.3 GB with 4 workers for a 15 s window. One clip (HUP257, 105 channels) took 682 s
+in that run, against 43–49 s for its siblings, while other containers shared the Docker VM; we
+read that as contention, not the app. Before the vectorised fragility row, `ENGINE=ezfragility`
+measured 2.5 s per 208-channel window instead of 0.8 s. The image is 1.44 GB unpacked, 394 MB
+compressed (`rocker/r-ver:4.6.0` 1.36 GB plus ~80 MB of R packages).
 
 ## Running it locally
 
@@ -141,6 +188,11 @@ On real data see `sample-input/README.md`.
   `fragility_pre` is not a "baseline" to subtract blindly.
 - Linear model in short windows: artefacts, flat or bridged channels and strong common
   signals distort A. Re-reference first (ieeg-prep's bipolar montage) and mark bad channels.
+- Stimulation-induced seizures carry stimulation artefacts in the pre-onset window. On such
+  windows the fitted model can sit right at the stability boundary, where the perturbation norm
+  is numerically undefined for some trial eigenvalues; those are skipped (EZFragility's loop
+  would give an arbitrary value or fail) and windows with any undefined channel are counted in
+  `provenance.json` (`undefined_windows`).
 - The time-resolved fragility matrix (channels × windows) is not written, only its means.
 - Runtime grows with channels³ per window: a 200-channel montage takes ~4–5 min per seizure
   on 4 vCPUs; very large montages (> 300 channels) are slow.
