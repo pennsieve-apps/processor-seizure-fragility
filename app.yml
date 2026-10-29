@@ -87,10 +87,13 @@ parameters:
     type: string
     label: Engine
     description: >-
-      fast (default): EZFragility's ridge search with the fragility row computed for all channels
-      at once (same numbers, ~3x faster). ezfragility: EZFragility's calcAdjFrag unchanged.
-    defaultValue: fast
-    validValues: [fast, ezfragility]
+      stable (default): EZFragility's ridge search, and each channel's minimum-norm perturbation
+      computed without the rounding cancellation of EZFragility's formula (exact to ~1e-13 against
+      a 256-bit reference). fast: v0.1.x (same formula as EZFragility, vectorised; loses up to
+      ~1e-2 per window on recordings with more channels than samples per window).
+      ezfragility: EZFragility's calcAdjFrag unchanged (slowest; can fail on such recordings).
+    defaultValue: stable
+    validValues: [stable, fast, ezfragility]
   - name: THREADS
     type: integer
     label: Worker processes

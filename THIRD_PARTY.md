@@ -5,7 +5,7 @@ app's R code (`R/`) runs in the same R process as EZFragility, Epoch and gsignal
 GPL-3.0(-or-later), and it calls EZFragility's internal functions (`ridgeSearch`,
 `standardizeIEEG`) directly. Because of that tight, in-process linking, this repository's own
 code is also licensed **GPL-3.0-or-later** (see `LICENSE`), not Apache-2.0 like most Pennsieve
-apps. The fixture script `tests/make_fixture.py` is part of the same repository and under the
+apps. The fixture script `tests/make_fixture.py` and the reference scripts in `tests/reference/` are part of the same repository and under the
 same licence.
 
 All R packages are installed unmodified as Linux binaries from the Posit Package Manager CRAN
@@ -15,10 +15,11 @@ versions of the ones the app calls. Each package's licence is inside the image u
 
 | Component | Version | What it does here | Licence | Source |
 |---|---|---|---|---|
-| EZFragility | 2.1.1 | Ridge regression of the linear network model with the stability search (`ridgeSearch`), scaling (`standardizeIEEG`), and `calcAdjFrag` with `ENGINE=ezfragility`; its `fragilityRow` is the reference the fast engine is tested against | GPL (>= 3) | https://CRAN.R-project.org/package=EZFragility (archived by CRAN on 2026-10-09, see README), https://github.com/Jiefei-Wang/EZFragility |
+| EZFragility | 2.1.1 | Ridge regression of the linear network model with the stability search (`ridgeSearch`), scaling (`standardizeIEEG`), and `calcAdjFrag` with `ENGINE=ezfragility`; its `fragilityRow` is what the stable and fast engines are tested against where it is well conditioned | GPL (>= 3) | https://CRAN.R-project.org/package=EZFragility (archived by CRAN on 2026-10-09, see README), https://github.com/Jiefei-Wang/EZFragility |
 | Epoch | 1.0.7 | iEEG container class EZFragility depends on | GPL (>= 3) | CRAN |
 | gsignal | 0.3-7 | Butterworth band-pass (`butter`, `filtfilt`) and polyphase resampling (`resample`) | GPL-3 | CRAN |
 | doParallel, foreach, iterators | 1.0.17, 1.5.2, 1.0.14 | Parallel windows for `ENGINE=ezfragility` | GPL-2; Apache-2.0; Apache-2.0 | CRAN |
+| python-flint | 0.9.0 | Development only, not in the image: the 256-bit reference norms of `tests/testthat/reference/` (`tests/reference/reference.py`, arb/acb ball arithmetic) | MIT (FLINT: LGPL-3.0-or-later) | https://pypi.org/project/python-flint/ |
 | jsonlite | 2.0.0 | provenance.json | MIT | CRAN |
 | ggplot2, ggtext, gridtext, viridis, glue, rlang, progress, ramify, reshape2, pracma, … | snapshot 2026-06-23 | Imported by EZFragility / Epoch / gsignal (plots and helpers, not used by the app) | MIT; GPL-2 (ggtext); GPL (>= 2) (ramify); GPL (>= 3) (pracma) | CRAN |
 | testthat (+ deps) | 3.3.2 | Unit tests (`/app/tests`) | MIT | CRAN |

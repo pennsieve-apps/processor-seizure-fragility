@@ -62,7 +62,7 @@ fragility_params <- function() {
     STEP_MS = env_number("STEP_MS", 125, min = 1),
     LAMBDA = lam,
     N_SEARCH = env_number("N_SEARCH", 100, min = 1, max = 10000, integer = TRUE),
-    ENGINE = env_choice("ENGINE", "fast", c("fast", "ezfragility")),
+    ENGINE = env_choice("ENGINE", "stable", c("stable", "fast", "ezfragility")),
     ONSET_SOURCE = env_choice("ONSET_SOURCE", "auto", c("auto", "onsets", "expert")),
     THREADS = env_number("THREADS", 0, min = 0, max = 128, integer = TRUE)
   )
