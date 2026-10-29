@@ -1,0 +1,16 @@
+# local data: fixtures, outputs, recordings
+data/
+*.edf
+
+# caches
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

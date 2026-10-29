@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=https://schemas.pennsieve.io/app-manifest/v1.json
+schemaVersion: "1.0"
+application:
+  name: Seizure Neural Fragility
+  description: >-
+    Neural fragility (Li et al., Nature Neuroscience 2021) around each seizure onset, with the
+    EZFragility R package: in 250 ms windows (125 ms step) from 60 s before to 30 s after the
+    onset, a linear network model x(t+1) = A x(t) is fitted to the iEEG and each channel's
+    fragility is how small a change to its connections would make the network unstable. Channels
+    of the seizure onset zone tend to be the most fragile around onset. Reads the BIDS-iEEG
+    derivative of ieeg-prep (or any BIDS-iEEG/EDF recording with a known onset), uses the onset
+    detected by seizure-dynasd when linked, and writes fragility.csv (mean fragility before and
+    after onset, and the channel rank) for seizure-consensus and ieeg-report. The image runs
+    GPL-3.0-or-later code (EZFragility) in-process.
+  type: processor
+  tags: [ieeg, seeg, electrophysiology, epilepsy, neuroscience, seizure-onset, fragility, network-model]
+runtime:
+  # Measured on the 24 demo clips (85-208 bipolar channels, 719 windows each); see README
+  # "Runtime". Time grows with channels^3 per window; memory stays under ~1 GB.
+  cpu: 4096
+  memory: 4096
+  computeTypes: [standard]
+  timeoutSeconds: 14400
+parameters:
+  - name: WINDOW_S
+    type: string
+    label: Analysis window (s from onset)
+    description: >-
+      Start and end of the analysed segment in seconds relative to the seizure onset, "start,end"
+      (default -60,30). Cut to the recording when it runs past either end.
+    defaultValue: "-60,30"
+  - name: ONSET_SOURCE
+    type: string
+    label: Onset
+    description: >-
+      Where the onset comes from. auto (default): seizure-dynasd's seizure_onsets.csv from the
+      onsets input when it has the recording, else recordings.csv onset_s, else the first
+      `seizure` event of _events.tsv. onsets: detected onsets only. expert: never the detected one.
+    defaultValue: auto
+    validValues: [auto, onsets, expert]
+  - name: RESAMPLE_HZ
+    type: number
+    label: Analysis sampling rate (Hz)
+    description: >-
+      Signals sampled faster are resampled to this rate before the model is fitted (default 512;
+      0 keeps the recorded rate). Never upsampled.
+    defaultValue: 512
+    min: 0
+  - name: BANDPASS_HZ
+    type: string
+    label: Band-pass (Hz)
+    description: >-
+      Zero-phase 4th-order Butterworth band-pass "low,high" before resampling (default 0.5,150,
+      as in EZFragility's reproduction of the paper); "none" to skip. The upper edge is lowered
+      below Nyquist when needed.
+    defaultValue: "0.5,150"
+  - name: WIN_MS
+    type: number
+    label: Window (ms)
+    description: Length of each model window (Li et al. 2021 and EZFragility use 250 ms).
+    defaultValue: 250
+    min: 10
+  - name: STEP_MS
+    type: number
+    label: Step (ms)
+    description: Step between windows (Li et al. 2021 and EZFragility use 125 ms).
+    defaultValue: 125
+    min: 1
+  - name: LAMBDA
+    type: string
+    label: Ridge penalty
+    description: >-
+      auto (default): EZFragility's search, starting at 1e-4 (the paper's value) and raising the
+      penalty until the window's model is stable. A number: that penalty for every window.
+    defaultValue: auto
+  - name: N_SEARCH
+    type: integer
+    label: Trial eigenvalues
+    description: >-
+      Number of points on the unit circle searched for each channel's minimum-norm perturbation
+      (EZFragility's nSearch, default 100).
+    defaultValue: 100
+    min: 1
+    max: 10000
+  - name: ENGINE
+    type: string
+    label: Engine
+    description: >-
+      fast (default): EZFragility's ridge search with the fragility row computed for all channels
+      at once (same numbers, ~3x faster). ezfragility: EZFragility's calcAdjFrag unchanged.
+    defaultValue: fast
+    validValues: [fast, ezfragility]
+  - name: THREADS
+    type: integer
+    label: Worker processes
+    description: Windows are computed in parallel in this many processes; match the vCPUs.
+    defaultValue: 4
+    min: 1
+    max: 128
+inputs:
+  - name: ieeg
+    description: >-
+      ieeg-prep's BIDS-iEEG derivative (recordings.csv, *_desc-preproc_ieeg.edf, _channels.tsv,
+      _events.tsv), or any BIDS-iEEG dataset / EDF files. Only good channels of type SEEG, ECOG,
+      DBS or EEG are used.
+    mediaTypes: [application/edf, text/csv, text/tab-separated-values, application/json]
+    placement: subfolder
+    required: true
+  - name: onsets
+    description: >-
+      Optional: seizure-dynasd's onsets (seizure_onsets.csv: recording_id, onset_s, method); its
+      onset is used in place of the expert onset when present.
+    mediaTypes: [text/csv, application/json]
+    placement: subfolder
+    required: false
+outputs:
+  - name: fragility
+    description: >-
+      fragility.csv (recording_id, channel, fragility_pre, fragility_post, rank): mean fragility
+      (0-1) over the windows before and after the onset, and the channel's rank by fragility_post
+      (1 = most fragile); provenance.json (parameters, onset used and its source, windows, ridge
+      penalties, timings per recording).
+    mediaTypes: [text/csv, application/json]

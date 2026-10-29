@@ -1,0 +1,146 @@
+cff-version: "1.2.0"
+message: If you use this app, please cite it and the works it builds on, listed under references.
+type: software
+title: Seizure Neural Fragility
+abstract: Computes neural fragility (Li et al. 2021) of each iEEG channel around a seizure onset with
+  the EZFragility R package, in 250 ms windows from 60 s before to 30 s after the onset, and writes
+  the mean fragility before and after onset and the channel ranking, for seizure onset zone
+  localisation in the Seizure Onset Localisation workflow.
+authors:
+- name: Pennsieve (University of Pennsylvania)
+repository-code: https://github.com/pennsieve-apps/processor-seizure-fragility
+license: GPL-3.0-or-later
+keywords:
+- ieeg
+- seeg
+- electrophysiology
+- epilepsy
+- seizure-onset
+- neural-fragility
+- network-model
+references:
+- type: article
+  title: Neural fragility as an EEG marker of the seizure onset zone
+  authors:
+  - family-names: Li
+    given-names: Adam
+  - family-names: Huynh
+    given-names: Chester
+  - family-names: Fitzgerald
+    given-names: Zachary
+  - family-names: Cajigas
+    given-names: Iahn
+  - family-names: Brusko
+    given-names: Damian
+  - family-names: Jagid
+    given-names: Jonathan
+  - family-names: Claudio
+    given-names: Angel O.
+  - family-names: Kanner
+    given-names: Andres M.
+  - family-names: Hopp
+    given-names: Jennifer
+  - family-names: Chen
+    given-names: Stephanie
+  - family-names: Haagensen
+    given-names: Jennifer
+  - family-names: Johnson
+    given-names: Emily
+  - family-names: Anderson
+    given-names: William
+  - family-names: Crone
+    given-names: Nathan
+  - family-names: Inati
+    given-names: Sara
+  - family-names: Zaghloul
+    given-names: Kareem A.
+  - family-names: Bulacio
+    given-names: Juan
+  - family-names: Gonzalez-Martinez
+    given-names: Jorge
+  - family-names: Sarma
+    given-names: Sridevi V.
+  year: 2021
+  journal: Nature Neuroscience
+  volume: 24
+  issue: '10'
+  start: '1465'
+  end: '1474'
+  doi: 10.1038/s41593-021-00901-w
+- type: software
+  title: 'EZFragility: Compute Neural Fragility for Ictal iEEG Time Series'
+  authors:
+  - family-names: Wang
+    given-names: Jiefei
+  - family-names: Karas
+    given-names: Patrick
+  - family-names: Lesage
+    given-names: Anne-Cecile
+  - family-names: Malagaris
+    given-names: Ioannis
+  - family-names: Zhou
+    given-names: Oliver
+  - family-names: Camarillo Rodriguez
+    given-names: Liliana
+  - family-names: O'Leary
+    given-names: Sean
+  - family-names: Zhang
+    given-names: Yuanyi
+  version: 2.1.1
+  year: 2025
+  publisher:
+    name: The R Foundation (CRAN)
+  url: https://CRAN.R-project.org/package=EZFragility
+  repository-code: https://github.com/Jiefei-Wang/EZFragility
+  doi: 10.32614/CRAN.package.EZFragility
+  license: GPL-3.0-or-later
+- type: article
+  title: 'Building an Ecosystem of Seizure Localization Methods: Neural Fragility as the First Step'
+  authors:
+  - family-names: Wang
+    given-names: Jiefei
+  - family-names: Lesage
+    given-names: Anne-Cecile
+  - family-names: Zhou
+    given-names: Oliver
+  - family-names: Malagaris
+    given-names: Ioannis
+  - family-names: O’Leary
+    given-names: Sean
+  - family-names: Camarillo Rodriguez
+    given-names: Liliana
+  - family-names: Silveira
+    given-names: Diosely C.
+  - family-names: Wang
+    given-names: Zhengjia
+  - family-names: Zhang
+    given-names: Yuanyi
+  - family-names: Karas
+    given-names: Patrick J.
+  year: 2026
+  journal: eNeuro
+  volume: 13
+  issue: '3'
+  start: ENEURO.0340-25.2026
+  doi: 10.1523/ENEURO.0340-25.2026
+- type: data
+  title: Multi-Expert Seizure Annotation
+  authors:
+  - family-names: Ojemann
+    given-names: William K
+  - family-names: Zhou
+    given-names: Daniel
+  - family-names: Armstrong
+    given-names: Caren
+  - family-names: Sinha
+    given-names: Nishant
+  - family-names: Litt
+    given-names: Brian
+  - family-names: Conrad
+    given-names: Erin
+  year: 2026
+  publisher:
+    name: Pennsieve Discover
+  version: '3'
+  doi: 10.26275/dely-fzwx
+  license: CC-BY-4.0
