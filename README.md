@@ -132,6 +132,11 @@ the AUC of `fragility_post` for telling the expert consensus onset channels (`on
 - Spontaneous seizures median 0.992 (n = 18), stimulation-induced 0.936 (n = 6); with low-voltage
   fast activity 0.946 (n = 9), without 0.995 (n = 15). (These two flags are not in ieeg-prep's
   `recordings.csv` yet; they were taken from the dataset's `annotations.tsv` for this check only.)
+- **With seizure-dynasd's detected onsets** (the workflow default when `onsets` is linked;
+  median absolute onset error 5.0 s, up to 59.5 s): `fragility_post` median AUC 0.981 (range
+  0.384–1.000), `fragility_pre` 0.924, post − pre 0.795. The worst clip falls to 0.38 when the
+  detected onset is far from the expert one. These outputs are in
+  `workflow-epilepsy-ieeg/data/work/fragility/`.
 - Through seizure-consensus with fragility alone: precision 0.35, recall 0.87, F1 0.46 (medians)
   for the top 10 channels.
 - **Read with care.** The most fragile channels are largely the same in every seizure of a
