@@ -130,3 +130,10 @@ outputs:
       (1 = most fragile); provenance.json (parameters, onset used and its source, windows, ridge
       penalties, timings per recording).
     mediaTypes: [text/csv, application/json]
+
+# How a release is tested before it is made public: the inputs a review run uses.
+# See app-deploy-service docs/app-manifest-review.md.
+review:
+  version: 1
+  generate:
+    command: python tests/make_fixture.py "$REVIEW_INPUT_DIR"
