@@ -1,5 +1,6 @@
 cff-version: "1.2.0"
-message: If you use this app, please cite it and the works it builds on, listed under references.
+message: >-
+  If you use this app, please cite the work it implements (preferred-citation), this release, and Pennsieve (RRID:SCR_021677); the other works it builds on are listed under references.
 type: software
 title: Seizure Neural Fragility
 abstract: Computes neural fragility (Li et al. 2021) of each iEEG channel around a seizure onset with
@@ -18,6 +19,56 @@ keywords:
 - seizure-onset
 - neural-fragility
 - network-model
+# The work this app implements; the release report's "How to cite" puts it first.
+preferred-citation:
+  type: article
+  title: Neural fragility as an EEG marker of the seizure onset zone
+  authors:
+  - family-names: Li
+    given-names: Adam
+  - family-names: Huynh
+    given-names: Chester
+  - family-names: Fitzgerald
+    given-names: Zachary
+  - family-names: Cajigas
+    given-names: Iahn
+  - family-names: Brusko
+    given-names: Damian
+  - family-names: Jagid
+    given-names: Jonathan
+  - family-names: Claudio
+    given-names: Angel O.
+  - family-names: Kanner
+    given-names: Andres M.
+  - family-names: Hopp
+    given-names: Jennifer
+  - family-names: Chen
+    given-names: Stephanie
+  - family-names: Haagensen
+    given-names: Jennifer
+  - family-names: Johnson
+    given-names: Emily
+  - family-names: Anderson
+    given-names: William
+  - family-names: Crone
+    given-names: Nathan
+  - family-names: Inati
+    given-names: Sara
+  - family-names: Zaghloul
+    given-names: Kareem A.
+  - family-names: Bulacio
+    given-names: Juan
+  - family-names: Gonzalez-Martinez
+    given-names: Jorge
+  - family-names: Sarma
+    given-names: Sridevi V.
+  year: 2021
+  journal: Nature Neuroscience
+  volume: 24
+  issue: '10'
+  start: '1465'
+  end: '1474'
+  doi: 10.1038/s41593-021-00901-w
 references:
 - type: article
   title: Neural fragility as an EEG marker of the seizure onset zone
